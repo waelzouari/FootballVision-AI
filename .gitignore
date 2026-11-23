@@ -2,7 +2,14 @@ __pycache__/
 .DS_Store
 .pytest_cache/
 .venv/
+*.egg-info/
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+*token*
 *.pyc
 *.pt
 *.pth
@@ -12,3 +19,4 @@ __pycache__/
 *.mov
 outputs/*
 !outputs/.gitkeep
+FootballVision_Local_Assets.zip

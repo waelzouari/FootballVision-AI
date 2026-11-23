@@ -7,7 +7,7 @@ lazy Ultralytics loading when that optional dependency is installed.
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from math import isfinite
 from pathlib import Path
@@ -32,6 +32,56 @@ class YoloPredictor(Protocol):
         """Return predictions for one frame without changing its coordinates."""
 
 
+@dataclass(frozen=True)
+class LocalYoloModelInfo:
+    """Inspectable metadata for explicitly supplied, local YOLO weights."""
+
+    path: Path
+    provenance: str
+    class_names: tuple[str, ...]
+
+
+def inspect_local_yolo_model(
+    model_path: str | Path,
+    *,
+    loader: Callable[[str], Any] | None = None,
+) -> LocalYoloModelInfo:
+    """Load only an explicit local weights file and report its declared labels.
+
+    ``loader`` exists to make runtime validation testable without Ultralytics.
+    It must load the exact supplied path; this function never resolves model
+    aliases, URLs, or cache locations.
+    """
+    path = Path(model_path)
+    if not path.is_file():
+        raise FileNotFoundError(
+            f"YOLO weights not found at {path}; supply an approved local weights file. "
+            "Automatic model downloads are disabled."
+        )
+    if loader is None:
+        try:
+            from ultralytics import YOLO
+        except ImportError as error:  # pragma: no cover - environment dependent
+            raise RuntimeError(
+                "Ultralytics is not installed; install it before using approved local YOLO weights."
+            ) from error
+        loader = YOLO
+
+    model = loader(str(path))
+    names = getattr(model, "names", None)
+    if isinstance(names, Mapping):
+        class_names = tuple(str(names[index]) for index in sorted(names))
+    elif isinstance(names, Sequence) and not isinstance(names, (str, bytes)):
+        class_names = tuple(str(name) for name in names)
+    else:
+        raise ValueError("The local YOLO model does not expose a usable class-label mapping.")
+    return LocalYoloModelInfo(
+        path=path.resolve(),
+        provenance=f"local file: {path.resolve()}",
+        class_names=class_names,
+    )
+
+
 class YoloDetector:
     """Map YOLO labels to FootballVision's typed detection contract."""
 
@@ -42,11 +92,15 @@ class YoloDetector:
         predictor: YoloPredictor | None = None,
         confidence_threshold: float = 0.25,
         class_mapping: Mapping[str, ObjectType] | None = None,
+        image_size: int = 640,
+        device: str | None = None,
     ) -> None:
         if not 0.0 <= confidence_threshold <= 1.0:
             raise ValueError("confidence_threshold must be in [0, 1]")
         if predictor is None and model_path is None:
             raise ValueError("provide a predictor or a local model_path")
+        if image_size < 32:
+            raise ValueError("image_size must be at least 32")
 
         mapping = {
             "person": ObjectType.PLAYER,
@@ -61,6 +115,8 @@ class YoloDetector:
         self._predictor = predictor
         self._confidence_threshold = confidence_threshold
         self._class_mapping = mapping
+        self._image_size = image_size
+        self._device = device
 
     def detect(self, frame: Any, timestamp_s: float) -> tuple[Detection, ...]:
         """Return valid player, ball and referee detections for a video frame."""
@@ -92,7 +148,12 @@ class YoloDetector:
                     "YOLO model path must point to an existing local weights file; "
                     "automatic model downloads are disabled."
                 )
-            self._predictor = _UltralyticsPredictor(self._model_path)
+            self._predictor = _UltralyticsPredictor(
+                self._model_path,
+                confidence_threshold=self._confidence_threshold,
+                image_size=self._image_size,
+                device=self._device,
+            )
         return self._predictor
 
     @staticmethod
@@ -106,15 +167,31 @@ class YoloDetector:
 class _UltralyticsPredictor:
     """Optional adapter kept private so core tests need no ML dependency."""
 
-    def __init__(self, model_path: Path) -> None:
+    def __init__(
+        self,
+        model_path: Path,
+        *,
+        confidence_threshold: float,
+        image_size: int,
+        device: str | None,
+    ) -> None:
         try:
             from ultralytics import YOLO
         except ImportError as error:  # pragma: no cover - dependency is optional
             raise RuntimeError("Install ultralytics to use a local YOLO model") from error
         self._model = YOLO(str(model_path))
+        self._confidence_threshold = confidence_threshold
+        self._image_size = image_size
+        self._device = device
 
     def predict(self, frame: Any) -> Iterable[RawPrediction]:  # pragma: no cover - optional runtime
-        for result in self._model.predict(frame, verbose=False):
+        for result in self._model.predict(
+            frame,
+            conf=self._confidence_threshold,
+            imgsz=self._image_size,
+            device=self._device,
+            verbose=False,
+        ):
             names = result.names
             for box in result.boxes:
                 class_id = int(box.cls[0].item())

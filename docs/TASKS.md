@@ -3,12 +3,12 @@
 ## P0 milestones (sequential dependencies)
 - [x] P0-001 Create typed contracts, minimal Python package layout, config and focused tests (orchestrator).
 - [x] P0-002 OpenCV video ingestion and timestamps (orchestrator integration or dashboard agent with exclusive ownership).
-- [x] P0-003 YOLO detector with player/ball/referee mapping, confidence and box outputs (detection).
-- [x] P0-004 Player tracking adapter and independent ball state/tracking (transparent IoU baseline; ByteTrack runtime adapter pending dependency approval).
-- [x] P0-005 Jersey team classification A/B/unknown (teams_field; depends on crops/detections).
-- [ ] P0-006 Annotated MP4, CSV, FPS and basic dashboard (fixture-backed metrics/dashboard complete; annotated MP4 and CSV pending integration).
-- [ ] P0-007 Per-module evaluation, reproducible test clips and metrics (evaluation).
-- [ ] P0-008 Integrate real P0 pipeline and validate on licensed sample clips (orchestrator).
+- [x] P0-003 YOLO detector with player/ball/referee mapping, confidence and box outputs (real local YOLO11n inference validated; COCO has no referee class).
+- [x] P0-004 Player ByteTrack adapter and independent ball state/tracking (real ByteTrack IDs and explicit ball visibility states validated).
+- [x] P0-005 Jersey team classification A/B/unknown (colour-based calibration and temporal smoothing; unknown remains explicit).
+- [x] P0-006 Annotated MP4, CSV, FPS and basic dashboard (validated with real detector output on `corrected_excerpt.mp4`).
+- [x] P0-007 Per-module evaluation, reproducible test clips and metrics (real-run report in `evaluation/REPORT.md`; ground-truth metrics unavailable).
+- [x] P0-008 Integrate real P0 pipeline and validate on licensed sample clips (orchestrator; outputs intentionally ignored by Git).
 
 ## P1
 - [ ] P1-001 Pitch line/keypoint detection, validated homography and 2D view (teams_field).
