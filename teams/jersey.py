@@ -150,6 +150,7 @@ class TemporalTeamSmoother:
         self._window_size = window_size
         self._min_observations = min_observations
         self._history: dict[int, deque[Team]] = {}
+        self._stable: dict[int, Team] = {}
 
     def update(self, track_id: int, candidate: Team) -> Team:
         """Return a stable A/B label only after an unambiguous local majority."""
@@ -158,7 +159,12 @@ class TemporalTeamSmoother:
         history = self._history.setdefault(track_id, deque(maxlen=self._window_size))
         history.append(candidate)
         counts = {team: sum(value is team for value in history) for team in (Team.A, Team.B)}
+        stable = self._stable.get(track_id)
+        if stable is not None:
+            return stable
         best_count = max(counts.values())
         if best_count < self._min_observations or counts[Team.A] == counts[Team.B]:
             return Team.UNKNOWN
-        return Team.A if counts[Team.A] > counts[Team.B] else Team.B
+        stable = Team.A if counts[Team.A] > counts[Team.B] else Team.B
+        self._stable[track_id] = stable
+        return stable

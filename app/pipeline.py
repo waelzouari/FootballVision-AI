@@ -26,6 +26,7 @@ class PipelineConfig:
     output_dir: Path
     confidence_threshold: float = 0.20
     image_size: int = 640
+    device: str | None = None
     max_frames: int | None = None
 
     def __post_init__(self) -> None:
@@ -66,6 +67,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRun:
         config.model_path,
         confidence_threshold=config.confidence_threshold,
         image_size=config.image_size,
+        device=config.device,
     )
     player_tracker = ByteTrackPlayerTracker(
         settings=ByteTrackSettings(

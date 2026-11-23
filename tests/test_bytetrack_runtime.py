@@ -21,7 +21,13 @@ class FakeBackend:
 
 def test_uses_only_current_detection_geometry_and_filters_non_players():
     backend = FakeBackend()
-    tracker = ByteTrackPlayerTracker(backend_factory=lambda _: backend)
+    captured_settings = []
+
+    def backend_factory(settings):
+        captured_settings.append(settings)
+        return backend
+
+    tracker = ByteTrackPlayerTracker(backend_factory=backend_factory)
     referee = Detection(ObjectType.REFEREE, (1, 1, 2, 2), 0.8, 1.0)
 
     tracked = tracker.update((_player(), referee))
@@ -30,6 +36,7 @@ def test_uses_only_current_detection_geometry_and_filters_non_players():
     assert tracked[0].track_id == 7
     assert tracked[0].xyxy == (10.0, 10.0, 30.0, 60.0)
     assert tracked[0].confidence == 0.9
+    assert captured_settings[0].match_thresh == 0.85
 
 
 def test_missing_runtime_raises_actionable_error():

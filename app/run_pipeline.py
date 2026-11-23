@@ -15,6 +15,7 @@ def main() -> None:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--confidence", type=float, default=0.20)
     parser.add_argument("--imgsz", type=int, default=640)
+    parser.add_argument("--device", help="Ultralytics device, for example 0 or cpu")
     parser.add_argument("--max-frames", type=int)
     args = parser.parse_args()
     run = run_pipeline(
@@ -24,6 +25,7 @@ def main() -> None:
             output_dir=args.output_dir,
             confidence_threshold=args.confidence,
             image_size=args.imgsz,
+            device=args.device,
             max_frames=args.max_frames,
         )
     )

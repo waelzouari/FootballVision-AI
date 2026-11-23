@@ -39,3 +39,13 @@ def test_temporal_smoother_requires_evidence_and_rejects_unknown_candidate():
     assert smoother.update(7, Team.A) is Team.A
     assert smoother.update(7, Team.B) is Team.A
     assert smoother.update(7, Team.UNKNOWN) is Team.UNKNOWN
+
+
+def test_temporal_smoother_keeps_established_team_for_track_lifetime():
+    smoother = TemporalTeamSmoother(window_size=3, min_observations=2)
+
+    assert smoother.update(9, Team.A) is Team.UNKNOWN
+    assert smoother.update(9, Team.A) is Team.A
+    assert smoother.update(9, Team.B) is Team.A
+    assert smoother.update(9, Team.B) is Team.A
+    assert smoother.update(9, Team.B) is Team.A

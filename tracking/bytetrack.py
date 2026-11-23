@@ -22,7 +22,9 @@ class ByteTrackSettings:
     track_low_thresh: float = 0.1
     new_track_thresh: float = 0.6
     track_buffer: int = 30
-    match_thresh: float = 0.8
+    # A moderately permissive association threshold reduces short-lived IDs
+    # on the P0 football clip without emitting tracker-predicted boxes.
+    match_thresh: float = 0.85
     fuse_score: bool = True
 
     def __post_init__(self) -> None:
