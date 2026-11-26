@@ -1,5 +1,4 @@
 # P0 Windows GPU optimization — `corrected_excerpt.mp4`
-
 Run date: 2026-11-23. All runs used the same 375 decoded frames, YOLO11n
 weights, 640 px inference size and 0.20 confidence threshold. Processing FPS
 is wall-clock throughput, not the source video's fixed 25 FPS.
